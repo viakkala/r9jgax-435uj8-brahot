@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ask the Crew · GTA: Grand Test Automation</title>
+<style>
+  :root { --bg:#0b0f1a; --panel:#141a2b; --ink:#e9eefc; --muted:#8e9ab8; --accent:#ff3d81; --accent2:#21d4fd; --me:#2a3352; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; background:radial-gradient(1200px 600px at 80% -10%, #3a1240 0%, transparent 60%),
+              radial-gradient(900px 500px at -10% 110%, #0e3a52 0%, transparent 60%), var(--bg);
+              color:var(--ink); font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  .app { max-width:640px; margin:0 auto; height:100dvh; display:flex; flex-direction:column; }
+  header { padding:14px 16px 10px; border-bottom:1px solid #ffffff14; }
+  .title { font-weight:800; letter-spacing:.5px; font-size:20px;
+           background:linear-gradient(90deg,var(--accent),var(--accent2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .sub { color:var(--muted); font-size:13px; }
+  #log { flex:1; overflow-y:auto; padding:14px 12px; display:flex; flex-direction:column; gap:10px; }
+  .msg { max-width:86%; padding:10px 13px; border-radius:16px; white-space:pre-wrap; word-wrap:break-word; }
+  .bot { background:var(--panel); border:1px solid #ffffff12; align-self:flex-start; border-bottom-left-radius:4px; }
+  .me  { background:var(--me); align-self:flex-end; border-bottom-right-radius:4px; }
+  .typing { color:var(--muted); font-style:italic; }
+  .chips { display:flex; gap:8px; overflow-x:auto; padding:0 12px 8px; scrollbar-width:none; }
+  .chip { flex:0 0 auto; border:1px solid #ffffff26; background:#ffffff0a; color:var(--ink); border-radius:999px; padding:7px 12px; font-size:14px; cursor:pointer; }
+  form.bar { display:flex; gap:8px; padding:10px 12px calc(10px + env(safe-area-inset-bottom)); border-top:1px solid #ffffff14; background:#0b0f1acc; }
+  input[type=text] { flex:1; min-width:0; padding:12px 14px; border-radius:12px; border:1px solid #ffffff26; background:#0f1424; color:var(--ink); font-size:16px; }
+  button { border:0; border-radius:12px; padding:0 16px; font-weight:700; font-size:15px; cursor:pointer; color:#fff;
+           background:linear-gradient(135deg,var(--accent),#b0f); }
+  button.ghost { background:#ffffff14; }
+  button:disabled { opacity:.5; }
+  .gate { flex:1; display:flex; flex-direction:column; justify-content:center; padding:24px; gap:14px; }
+  .gate h1 { margin:0; font-size:28px; line-height:1.15; }
+  .gate p { margin:0; color:var(--muted); }
+  .gate form { display:flex; flex-direction:column; gap:10px; }
+  .gate button { padding:14px; }
+  .vote { align-self:stretch; text-align:center; background:linear-gradient(160deg,#1d1030,#0f2233); border:1px solid #ff3d8155; border-radius:18px; padding:16px; }
+  .vote img { width:min(260px,70vw); background:#fff; padding:8px; border-radius:12px; }
+  .vote a.btn { display:inline-block; margin-top:12px; padding:12px 18px; border-radius:12px; color:#fff; text-decoration:none; font-weight:800;
+                background:linear-gradient(135deg,var(--accent),#b0f); }
+  .vote .team { font-size:22px; font-weight:900; margin:4px 0 10px; }
+  .hidden { display:none !important; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="title">GTA: Grand Test Automation</div>
+    <div class="sub">🎮 Ask the Crew · Team Alchemist · HYD Hack Day 2026</div>
+  </header>
+
+  <section class="gate" id="gate">
+    <h1>Ask the Crew 🎮<br>Ask us anything, then tell us what you think.</h1>
+    <p>I answer questions about the project and pass your suggestions straight to the team. What's your name?</p>
+    <form id="nameForm">
+      <input type="text" id="name" placeholder="Your name" autocomplete="name" maxlength="80" required>
+      <button type="submit">Start chatting</button>
+    </form>
+  </section>
+
+  <div id="log" class="hidden" aria-live="polite"></div>
+  <div class="chips hidden" id="chips">
+    <button class="chip" type="button">What does it do?</button>
+    <button class="chip" type="button">Is the lidar real?</button>
+    <button class="chip" type="button">Did MATLAB validate the crash?</button>
+    <button class="chip" type="button">How many variants?</button>
+    <button class="chip" type="button">Limitations?</button>
+    <button class="chip" type="button">What's next?</button>
+  </div>
+  <form class="bar hidden" id="bar">
+    <input type="text" id="msg" placeholder="Ask a question or leave a suggestion…" autocomplete="off" maxlength="2000">
+    <button type="submit" id="send">Send</button>
+    <button type="button" class="ghost" id="finish" title="Finish & vote">Finish &amp; vote</button>
+  </form>
+</div>
+
+<template id="voteTpl">
+  <div class="vote">
+    <div>Enjoyed it? Please vote for</div>
+    <div class="team">Team Alchemist</div>
+    <img src="data:image/png;base64,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" alt="QR code for HYD Hack Day 2026 Voting">
+    <div><a class="btn" href="https://forms.cloud.microsoft/r/PAAY6j9mHr" target="_blank" rel="noopener">Open HYD Hack Day 2026 Voting</a></div>
+    <div class="sub" style="margin-top:8px">Pick <b>Team Alchemist</b> for Team choice. Thank you! 🙏</div>
+  </div>
+</template>
+
+<script>
+// In-browser version of server.py's offline engine (generated by build_static.py).
+const D = {"PROJECT": "GTA: Grand Test Automation", "TEAM": "Alchemist", "VOTE_URL": "https://forms.cloud.microsoft/r/PAAY6j9mHr", "VOTE_LABEL": "HYD Hack Day 2026 Voting", "FAQ": [[["what does", "what is this", "one line", "pitch", "about", "what is gta", "explain the project", "overview", "summary", "what is it"], "Players find the driving edge cases. Every drive comes back as a fully labelled sensor recording (GPS, actor tracks, lidar, lane lines), and MATLAB Scenario Builder turns it into a validated test scenario plus variants, without a real test drive. Want to know how a drive becomes a scenario?"], [["problem", "why does", "why this", "motivation", "pain", "address"], "Scenario Builder builds simulation scenarios from recorded drives. Interesting edge cases (aggressive cut-ins, brake checks, near misses) are rare and expensive to capture with real test cars, and real recordings come with no ground truth, so you can't measure how accurate extracted lanes or tracks are."], [["why a game", "why game", "why gamif", "why play", "humans", "players"], "Humans find edge cases nobody scripted, and the contracts point that creativity at specific test needs. It runs on real HITEC City roads from OpenStreetMap, every recording comes with an exact answer key (lidar labels, lane lines, actor positions), and it scales: anyone on the network can play in a browser."], [["lidar real", "real lidar", "is the lidar", "simulated", "synthetic", "fake", "real data", "real sensor"], "No, the lidar is simulated from the game's 3D city, with a perfect label on every point. That's the point: real lidar has no labels. Use it for pretraining, rare-case augmentation and testing, not as a replacement for real sensor data. Want to know how the labels are checked?"], [["lidar format", "format", "what format", "semantickitti", "kitti", "readgamelidar", "lidardata", "file format", "bin"], "The lidar is saved in SemanticKITTI format (velodyne/*.bin + labels/*.label + poses), the standard format for training lidar segmentation models. In MATLAB, readGameLidar loads it as pointCloud objects and as a scenariobuilder.LidarData object."], [["lidar", "beam", "points", "point cloud", "velodyne", "hdl"], "It's a 32-beam spinning lidar (Velodyne HDL-32E layout, -30.67° to +10.67°), 1,024 points per revolution, 100 m range, 10 Hz, mounted 1.73 m up: about 28,000 points per scan. Every point is labelled (road, lane marking, building, car, bus, auto, pole, metro and more), and car points carry the car's track ID."], [["label", "labels checked", "accuracy", "check", "agree", "99.9", "how accurate", "verified"], "99.9% of lidar points labelled as a car fall inside that car's box from actor_tracks.csv, so the lidar answer key and the tracks agree. For lanes, Scenario Builder's egoLaneIndex agreed with the game's true lane in 100% of frames."], [["lane", "lanes", "lane line", "lane boundar", "egolaneindex", "parabol"], "Lane-boundary ground truth comes from the same rules that paint the lane lines in the game, one parabola per boundary per frame. Scenario Builder's egoLaneIndex agreed with the game's true lane in 100% of frames. Fit error averages 13 cm (max 20 cm) because OSM road shapes kink at segment joins."], [["validate", "validation", "validated", "accepted", "crash", "contact", "5.05", "did matlab"], "Yes. MATLAB simulated the generated scenario and compared it with the recording: ACCEPTED, with the game's contact at 5.05 s and MATLAB's at 5.00 s. Want to see the other pipeline steps?"], [["variant", "variants", "how many", "generatevariants"], "4 variants, from getScenarioDescriptor + generateVariants, and 1 of them still collides. One gameplay moment becomes several test cases."], [["pipeline", "steps", "scenario builder", "matlab run", "does matlab", "really run", "worker", "export"], "When the test drive ends, a real MATLAB worker runs six Scenario Builder steps: import GPS and tracks, ego trajectory, non-ego actors, export to drivingScenario with OpenStreetMap roads (43 roads, 5 actors), validation (ACCEPTED, 5.05 s vs 5.00 s) and variants (4, 1 still collides). It takes about 3 minutes."], [["record", "recorded", "bundle", "csv", "files", "data", "what gets", "output", "exported"], "Each event (cut-in, hard brake, near miss, collision) becomes a clip from 5 s before to 3 s after: ego GPS and actor tracks at 20 Hz, events, OSM roads, lane-boundary ground truth, the ego's true lane, labelled lidar, and a manifest whose recorded inputs replay the drive exactly."], [["contract", "contracts", "bounty", "bounties", "mission", "close call", "bug hunt", "brake test", "rush"], "Five contracts, each a test case the ADAS team wants: Close Call (₹8,000), Brake Test (₹12,000), Bug Hunt (₹25,000, make the ego rear-end you), Checkpoint Cut-In (₹15,000) and Rush-Hour Squeeze (₹10,000). Every round's events are exported as recorded drives, pass or fail."], [["how does it work", "modes", "ways", "test drive", "play the game", "watch the bot", "bot"], "There are three modes. Start test drive: a scripted ride where a car cuts in and brakes, the ego crashes, and MATLAB processes the recording live. Play the game: you drive the adversary and try to make the test car fail. Watch the bot: a scripted bot plays a contract."], [["ego", "test car", "acc", "aeb", "system under test", "v1", "v2"], "The ego is the car under test: ACC plus AEB. Version v1 brakes at 1.5 s time-to-collision with 6 m/s²; v2 brakes at 2.5 s with 9 m/s²."], [["where", "city", "hyderabad", "hitec", "map", "roads", "location", "real roads"], "It runs on the real roads of HITEC City, Hyderabad, from OpenStreetMap, with landmarks like Cyber Towers, Inorbit Mall, Mindspace, the Durgam Cheruvu bridge and the metro."], [["limitation", "limitations", "weakness", "drawback", "not work", "missing", "honest", "camera", "images"], "It's honest synthetic data: simplified city geometry, synthetic lidar intensity and simple 1 cm range noise. Roads are flat (cars drive under flyovers), lane fits carry up to 20 cm error, it needs a real GPU, the camera-based lane detector isn't wired up yet, and only HITEC City is baked in."], [["next", "roadmap", "future", "plan", "improve", "coming"], "Next: score Scenario Builder's own lane and track extraction against the answer keys, export camera frames for laneBoundaryDetector, generate contracts from coverage gaps, and add bug replays, a bug-bounty leaderboard and more cities."], [["tech", "technology", "stack", "built with", "three.js", "typescript", "vite", "tests", "unit test"], "In the browser it's TypeScript, Three.js and Vite with a deterministic fixed-step simulation (bicycle model, IDM car following, AEB on time-to-collision). MATLAB runs as a background worker. There are 97 unit tests and 5 end-to-end browser tests, all passing."], [["credit", "credits", "assets", "gtahyd", "license", "osm", "esri", "kenney", "3d model", "who made the city"], "The city model, landmarks and metro are from gtahyd.in, used with the author's permission. Map data is © OpenStreetMap contributors (ODbL), satellite imagery is from Esri, Maxar and Earthstar Geographics, and the car models are Kenney (CC0)."], [["clone", "gta clone", "grand theft", "copy", "name", "why gta", "stand for", "called gta", "gta", "called"], "No. Here GTA stands for Grand Test Automation, a playful nod to the genre. It's an original game that borrows genre mechanics (contracts, radar, drone camera) on a real Hyderabad road map."], [["play", "can i play", "try", "url", "link", "access", "open"], "Yes, on the MathWorks network: open the demo in a browser on a machine with a GPU. Ask the team at the booth for the link, or just grab the wheel at the demo."], [["fps", "performance", "gpu", "slow", "lag", "frame rate"], "It needs a real GPU: about 55 fps, and about 35 fps with lidar on. Without one (VNC, remote desktop) it runs at a few fps and warns on the title screen."], [["team", "who built", "who made", "alchemist", "author"], "GTA: Grand Test Automation is built by Team Alchemist for HYD Hack Day 2026."]], "CUES": {"bug": ["bug", "broken", "crash", "crashed", "doesn't work", "does not work", "didn't work", "not working", "error", "glitch", "stuck", "freeze", "froze", "issue"], "praise": ["love", "awesome", "great job", "amazing", "cool project", "nice work", "well done", "impressive", "brilliant", "fantastic", "excellent", "superb", "nice demo", "good job", "great work", "wow"], "suggestion": ["suggest", "should", "could you", "can you make", "can you add", "would be", "it'd be", "add ", "make the", "make it", "improve", "consider", "maybe", "how about", "what if", "feedback", "change", "wish", "please add", "recommend", "idea"]}, "AREAS": [["lidar", ["lidar", "point cloud", "kitti", "beam", "velodyne"]], ["lanes", ["lane", "parabol", "marking"]], ["matlab-pipeline", ["matlab", "scenario builder", "variant", "pipeline", "validate", "validation", "export"]], ["test-drive", ["test drive", "test-drive", "scripted ride", "ride"]], ["visuals", ["graphic", "visual", "color", "colour", "ui", "look", "3d", "model", "texture", "fps", "screen"]], ["pitch", ["pitch", "presentation", "slide", "story", "demo"]], ["game", ["game", "car", "contract", "bounty", "radar", "drone", "player", "ego", "bot", "minimap", "speed", "faster"]]], "FORM_URL": "https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=ETrdmUhDaESb3eUHKx3B5ils4l4ZwwZLu5aph99sxANUNVFTOU1LV0paSUFXRExKOVg1N0dXM0pBSS4u", "LOG": null};
+const $ = s => document.querySelector(s);
+const log = $('#log');
+let voteShown = false;
+let state = JSON.parse(sessionStorage.getItem('gta_state') || 'null'); // {name, feedback:[...]}
+const save = () => sessionStorage.setItem('gta_state', JSON.stringify(state));
+
+const SECRET_RE = /\b(password|passwd|token|credential|secret|api[ -]?key|proxy|ssh|login|vpn)\b/i;
+const END_RE = /^\s*(done|bye|goodbye|that'?s all|that is all|finish(ed)?|end|exit|quit|no more|nothing else|i'?m done|all good|vote|how (do|can) i vote|where (do|can) i vote)\b/i;
+const THANKS_ONLY_RE = /^\s*(thanks|thank you|thx|ty|cool|ok(ay)?|great)[\s!.]*$/i;
+const QUESTION_RE = /\?|^\s*(what|why|how|when|where|who|which|is|are|does|do|did|can|could|will|was)\b/i;
+const reEsc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const hits = (text, keys) => { const t = text.toLowerCase(); return keys.filter(k => new RegExp('(^|[^a-z0-9])' + reEsc(k)).test(t)); };
+const score = (text, keys) => hits(text, keys).reduce((n, k) => n + k.length, 0);
+const guessArea = text => { for (const [area, keys] of D.AREAS) if (hits(text, keys).length) return area; return 'other'; };
+const voteText = () => `Thanks for stopping by! If you liked ${D.PROJECT}, please vote for **Team ${D.TEAM}** in the ${D.VOTE_LABEL} (Team choice). Scan the QR or tap the link below.`;
+
+// ---- Silent logging: every message goes to D.LOG in the background; reviewers do nothing extra. ----
+const SID = sessionStorage.getItem('gta_sid') || (() => { const v = Math.random().toString(36).slice(2, 10); sessionStorage.setItem('gta_sid', v); return v; })();
+let pending = JSON.parse(sessionStorage.getItem('gta_pending') || '[]');
+async function ship(rec) {
+  if (!D.LOG || !D.LOG.url) return true;
+  let body;
+  if (D.LOG.type === 'google-form') {
+    body = new URLSearchParams();
+    for (const [k, entry] of Object.entries(D.LOG.fields)) body.append(entry, String(rec[k] ?? ''));
+  } else {
+    body = JSON.stringify(rec); // text/plain keeps this a "simple" request (no CORS preflight)
+  }
+  try { await fetch(D.LOG.url, { method: 'POST', mode: 'no-cors', body, keepalive: true }); return true; }
+  catch (e) { return false; }
+}
+async function flush() {
+  const q = pending; pending = []; sessionStorage.setItem('gta_pending', '[]');
+  for (const r of q) if (!(await ship(r))) pending.push(r);
+  sessionStorage.setItem('gta_pending', JSON.stringify(pending));
+}
+function logEvent(kind, area, text, summary, follow_up, reply) {
+  const rec = { time: new Date().toISOString(), session: SID, reviewer: state ? state.name : '', kind, area, text,
+                summary, follow_up: !!follow_up, reply: (reply || '').slice(0, 500) };
+  pending.push(rec); sessionStorage.setItem('gta_pending', JSON.stringify(pending)); flush();
+}
+function record(kind, area, text, summary, follow_up) {
+  state.feedback.push({ kind, area, text }); save();
+  logEvent(kind, area, text, summary, follow_up);
+}
+window.addEventListener('online', flush);
+
+function answer(t) {
+  t = t.trim();
+  if (!t) return ['Ask me anything about the project, or tell me what you think!', false];
+  if (SECRET_RE.test(t)) return ["Sorry, I can't share credentials, passwords or internal machine details. Happy to explain how the project works, though. Want the one-line pitch?", false];
+  if (END_RE.test(t) || THANKS_ONLY_RE.test(t)) return [voteText(), true];
+  const tl = t.toLowerCase();
+  let kind = null;
+  for (const k of ['bug', 'praise', 'suggestion']) if (hits(tl, D.CUES[k]).length) { kind = k; break; }
+  let isQ = QUESTION_RE.test(t);
+  if (kind === 'suggestion' && /\b(can|could) you (make|add|change|put|remove)\b/.test(tl)) isQ = false;
+  let best = null, bestScore = 0;
+  for (const [keys, ans] of D.FAQ) { const s = score(t, keys); if (s > bestScore) { best = ans; bestScore = s; } }
+  if (kind && !(isQ && bestScore >= 8)) {
+    const area = guessArea(t);
+    const sum = { bug: 'Reviewer reported a problem', praise: 'Reviewer liked the project', suggestion: 'Reviewer suggestion' }[kind];
+    record(kind, area, t, `${sum} (${area}).`, kind !== 'praise');
+    if (kind === 'praise') return ["Thank you, that means a lot to Team Alchemist! I've noted it. Anything you'd like to ask, or anything we could do better?", false];
+    if (kind === 'bug') return ["Thanks for flagging that, I've noted it as a bug for the team. Anything else? Tap **Finish & vote** when you're done.", false];
+    return ["Great idea, I can't change the demo myself, but I've noted it as a suggestion for the team. Anything else? Tap **Finish & vote** when you're done.", false];
+  }
+  if (best && bestScore >= 1) return [best, false];
+  if (isQ) {
+    record('question-for-team', guessArea(t), t, "Question the knowledge base doesn't cover.", true);
+    return ["Good question, I don't have that in my notes, so I've noted it for the team and they'll follow up. Anything else you'd like to know?", false];
+  }
+  record('suggestion', guessArea(t), t, 'Free-form reviewer comment.', true);
+  return ["Thanks, I've noted that for the team. Anything else you'd like to ask or suggest?", false];
+}
+
+function esc(s){ return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function md(s){ return esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>'); }
+function add(text, who){ const d=document.createElement('div'); d.className='msg '+who; d.innerHTML = who==='bot'? md(text): esc(text); log.appendChild(d); log.scrollTop=log.scrollHeight; return d; }
+
+// Microsoft Forms. If FORM_URL contains NAME / FEEDBACK placeholders (a pre-filled link), the form opens filled in.
+// Otherwise the notes are copied to the clipboard and the reviewer pastes them into the Feedback box.
+const PREFILL = /=FEEDBACK(&|$)/.test(D.FORM_URL || '');
+function notesText() {
+  const fb = state.feedback.map((f, i) => `${i + 1}. [${f.kind} / ${f.area}] ${f.text}`);
+  const asked = (state.asked || []).map(q => `- ${q}`);
+  let text = `From: ${state.name}\n` + (fb.length ? fb.join('\n') : '(no suggestions)') + (asked.length ? `\n\nAlso asked:\n${asked.join('\n')}` : '');
+  return text.length > 1500 ? text.slice(0, 1500) + '…' : text;
+}
+function formLink() {
+  if (!D.FORM_URL) return '';
+  if (!PREFILL) return D.FORM_URL;
+  return D.FORM_URL.replace(/=NAME(?=&|$)/, '=' + encodeURIComponent(state.name))
+                   .replace(/=FEEDBACK(?=&|$)/, '=' + encodeURIComponent(notesText()));
+}
+async function copyText(t) {
+  try { await navigator.clipboard.writeText(t); return true; } catch (e) {}
+  const ta = document.createElement('textarea'); ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
+  ta.remove(); return ok;
+}
+function showVote(){
+  const link = formLink();
+  if (link && state.feedback.length) {
+    const box = document.createElement('div'); box.className = 'vote';
+    const n = state.feedback.length, plural = n === 1 ? ' is' : 's are';
+    box.innerHTML = PREFILL
+      ? `<div>Your <b>${n}</b> note${plural} ready. One tap to send them to the team:</div>
+         <a class="btn" href="${esc(link)}" target="_blank" rel="noopener">Submit my feedback ✔</a>
+         <div class="sub" style="margin-top:8px">Everything is already filled in. Just tap <b>Submit</b> on the form.</div>`
+      : `<div>Your <b>${n}</b> note${plural} ready for the team:</div>
+         <a class="btn" id="fbBtn" href="${esc(link)}" target="_blank" rel="noopener">Copy notes &amp; open form ✔</a>
+         <div class="sub" style="margin-top:8px">On the form: type your name, <b>paste</b> into Feedback, tap <b>Submit</b>.</div>
+         <pre class="notes" style="text-align:left;white-space:pre-wrap;font-size:13px;background:#0f1424;border-radius:10px;padding:8px;margin:10px 0 0;user-select:all">${esc(notesText())}</pre>`;
+    log.appendChild(box);
+    const b = box.querySelector('#fbBtn');
+    if (b) b.addEventListener('click', () => { copyText(notesText()); });
+  }
+  if (!voteShown) { voteShown = true; log.appendChild($('#voteTpl').content.cloneNode(true)); }
+  log.scrollTop = log.scrollHeight;
+}
+function openChat(){ $('#gate').classList.add('hidden'); ['#log','#chips','#bar'].forEach(s=>$(s).classList.remove('hidden')); $('#msg').focus(); }
+
+$('#nameForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const name = $('#name').value.trim().slice(0, 80); if (!name) return;
+  state = { name, feedback: [] }; save(); openChat();
+  logEvent('joined', 'other', '', 'Reviewer started a chat', false);
+  add(`Hi ${name.split(/\s+/)[0]}! I'm Team Alchemist's agent, your guide to **${D.PROJECT}** by Team ${D.TEAM}. Ask me anything about the project (how it works, the MATLAB results, the lidar, what's real and what's simulated), or tell me your suggestions. Tap **Finish & vote** when you're done.`, 'bot');
+});
+function send(text){
+  if (!text) return;
+  add(text, 'me'); $('#msg').value = '';
+  const before = state.feedback.length;
+  const [r, v] = answer(text);
+  if (state.feedback.length === before && !v) { state.asked = (state.asked || []).concat([text]); save(); }
+  if (state.feedback.length === before) logEvent(v ? 'finished' : 'chat', guessArea(text), text, v ? 'Reviewer finished' : 'Answered from knowledge base', false, r);
+  setTimeout(() => { add(r, 'bot'); if (v) showVote(); }, 250);
+}
+$('#bar').addEventListener('submit', e => { e.preventDefault(); send($('#msg').value.trim()); });
+document.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => send(c.textContent)));
+$('#finish').addEventListener('click', () => { add(voteText(), 'bot'); showVote(); logEvent('finished', 'other', '', 'Reviewer tapped Finish & vote', false); });
+
+flush();
+if (state) { openChat(); add(`Welcome back, ${state.name.split(/\s+/)[0]}! Ask me anything, or tap Finish & vote when you're done.`, 'bot'); }
+</script>
+
+</body>
+</html>
