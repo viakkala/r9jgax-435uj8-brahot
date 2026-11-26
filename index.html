@@ -194,15 +194,15 @@ async function copyText(t) {
 }
 function showVote(){
   const link = formLink();
-  if (link && state.feedback.length) {
-    const box = document.createElement('div'); box.className = 'vote';
-    const n = state.feedback.length, plural = n === 1 ? ' is' : 's are';
+  if (link && !document.getElementById('fbBox')) {
+    const box = document.createElement('div'); box.className = 'vote'; box.id = 'fbBox';
+    const n = state.feedback.length + (state.asked || []).length, plural = n === 1 ? ' is' : 's are';
     box.innerHTML = PREFILL
-      ? `<div>Your <b>${n}</b> note${plural} ready. One tap to send them to the team:</div>
+      ? `<div>${n ? `Your <b>${n}</b> note${plural} ready. One tap to send them to the team:` : 'Got feedback for the team? One tap:'}</div>
          <a class="btn" href="${esc(link)}" target="_blank" rel="noopener">Submit my feedback ✔</a>
          <div class="sub" style="margin-top:8px">Everything is already filled in. Just tap <b>Submit</b> on the form.</div>`
-      : `<div>Your <b>${n}</b> note${plural} ready for the team:</div>
-         <a class="btn" id="fbBtn" href="${esc(link)}" target="_blank" rel="noopener">Copy notes &amp; open form ✔</a>
+      : `<div>${n ? `Your <b>${n}</b> note${plural} ready for the team:` : 'Got feedback for the team? One quick form:'}</div>
+         <a class="btn" id="fbBtn" href="${esc(link)}" target="_blank" rel="noopener">Send feedback to the team ✔</a>
          <div class="sub" style="margin-top:8px">On the form: type your name, <b>paste</b> into Feedback, tap <b>Submit</b>.</div>
          <pre class="notes" style="text-align:left;white-space:pre-wrap;font-size:13px;background:#0f1424;border-radius:10px;padding:8px;margin:10px 0 0;user-select:all">${esc(notesText())}</pre>`;
     log.appendChild(box);
